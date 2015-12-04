@@ -4,13 +4,6 @@
 // Gamecube
 //================================================================================
 
-// it has this fucking global variable...
-//Gamecube_ Gamecube;
-//
-//Gamecube_::Gamecube_(void) {
-//    
-//}
-
 extern "C" int my_asm(uint32_t *buff, uint8_t len);
 
 void reverse_array(uint32_t *arr, uint8_t count) {

@@ -15,18 +15,17 @@ LOOP
     
     CMP     R3, #0          ; value == 0 ?
     BNE     SEND_HIGH
-    STR     R2, [R4,#0x1C]  ; set low
-    BL       WAIT_ONE_US_MINUS_OVERHEAD
-    BL       WAIT_ONE_US
-    BL       WAIT_ONE_US
-      ; if==1, set LED1 bit ;cw: "send low"
+    STR     R2, [R4,#0x1c]  ; set low
+    BL      WAIT_ONE_US_MINUS_OVERHEAD
+    BL      WAIT_ONE_US
+    BL      WAIT_ONE_US
     B       _END_SEND_HIGH
 SEND_HIGH
-    STR     R2, [R4,#0x1C]  ; set low
-    BL       WAIT_ONE_US
+    STR     R2, [R4,#0x1c]  ; set low
+    BL      WAIT_ONE_US
     STR     R2, [R4,#0x18]  ; set high
-    BL       WAIT_ONE_US_MINUS_OVERHEAD
-    BL       WAIT_ONE_US
+    BL      WAIT_ONE_US_MINUS_OVERHEAD
+    BL      WAIT_ONE_US
     
 _END_SEND_HIGH
     STR     R2, [R4,#0x18]
@@ -39,10 +38,18 @@ BACK
     ADD     R5, R5, #0x04 ; increment address that we access using R5
     
     CMP     R1, #0
-    BEQ     FINISH
+    BLT     FINISH
     B       LOOP
     
 FINISH
+    ; send one high bit to terminate
+    STR     R2, [R4,#0x1C]  ; set low
+    BL       WAIT_ONE_US
+    STR     R2, [R4,#0x18]  ; set high
+    BL       WAIT_ONE_US_MINUS_OVERHEAD
+    BL       WAIT_ONE_US
+    ;end of send one high bit to terminate
+    
     POP     {R4, R5, R6, LR}
     BX      LR
     
