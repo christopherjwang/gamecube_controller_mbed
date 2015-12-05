@@ -136,6 +136,8 @@ public:
 //    inline void write(void){} // TODO
     void gc_asm(uint32_t* buff, uint8_t len);
     void gc_send(uint32_t* buff, uint8_t len);
+    
+    void gc_read(uint8_t len);
 
 private:
     DigitalInOut data_line;

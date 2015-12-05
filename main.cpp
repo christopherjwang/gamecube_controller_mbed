@@ -8,7 +8,7 @@ int main() {
     __disable_irq();
     while(1) {
         g.gc_asm(start_sequence, 8);
+        g.gc_read(2);
         wait_us(100);
-        //g.gc_send(c, 24);
     }
 }

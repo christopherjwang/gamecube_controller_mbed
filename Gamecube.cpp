@@ -5,6 +5,10 @@
 //================================================================================
 
 extern "C" int my_asm(uint32_t *buff, uint8_t len);
+extern "C" int gc_asm_read(uint32_t *buff, uint8_t len);
+
+Serial pc(USBTX, USBRX); // tx, rx
+DigitalIn my_in(p10);
 
 void reverse_array(uint32_t *arr, uint8_t count) {
     int temp, i;
@@ -13,9 +17,6 @@ void reverse_array(uint32_t *arr, uint8_t count) {
         arr[count-i-1] = arr[i];
         arr[i] = temp;
     }
-    for (i = 0; i < count; ++i) {
-        printf("%d", arr[i]);
-    }    
 }
 
 
@@ -29,6 +30,18 @@ void Gamecube::gc_asm(uint32_t* buff, uint8_t len) {
     reverse_array(buff, len);
     my_asm(buff, len);
 }
+
+void Gamecube::gc_read(uint8_t len) {
+    //data_line.input();
+    uint32_t data[len*8];
+    for (int i=0; i < len*8; i++) data[i]=0;
+    gc_asm_read(data, len*8);
+    for (int i=0; i < len*8; i++) {
+        pc.printf("%d", data[i]);    
+    }
+    pc.printf("\n\r");
+}
+
 void Gamecube::gc_send(uint32_t* buff, uint8_t len) {
     __disable_irq();
     uint8_t i;
