@@ -1,7 +1,7 @@
     AREA asm_func, CODE, READONLY
     EXPORT gc_asm_write_read
 gc_asm_write_read
-    PUSH    {R4-R7, LR}
+    PUSH    {R4-R9, LR}
     SUB     R7, R7, R7
     
 WRITE_LOOP
@@ -10,6 +10,8 @@ WRITE_LOOP
     LDR     R6, =0x2009C000 ; 0x2009C020 = GPIO port 1 base address
 ; Move bit mask in register R4 for bit 18 only
     MOV.W   R4, #0x00000001   ; 0x040000 = 1<<18 all "0"s with a "1" in bit 18
+
+    MOV.W   R8, 0x00000002     ; Mask for p10 used for read
 
     LDR     R5, [R0, R7]
     
@@ -44,53 +46,53 @@ FINISH_WRITE
     BL       WAIT_ONE_US
     STR     R4, [R6,#0x18]  ; set high
     BL       WAIT_ONE_US_MINUS_OVERHEAD
-    BL       WAIT_ONE_US
     ;end of send one high bit to terminate
 
-
-    ADD     R0, R2, #0
-    ADD     R1, R3, #0
-    LDR     R4, =0x2009C000     ; 0x2009C020 = GPIO port 1 base address
-    MOV.W   R3, 0x00000002     ; Mask for p10
+; begin read
+    
     SUB     R7, R7, R7          ; offset to write into the array given
+    SUB     R3, R3, #1
+    B       FIRST_READ
     
 READ_LOOP
-    SUB     R1, R1, #1  ;R1 is the number of bits to read
-    CMP     R1, #0
+    SUB     R3, R3, #1  ;R3 is the number of bits to read
+    CMP     R3, #0
     BLT     FINISH
     
-    LDR     R2, =0x999999
+    LDR     R5, =0x999999
 WAIT_FOR_HIGH
-    SUB     R2, R2, #1          ; only check 0x100 times, 0x100 is arbitrarily chosen right now
-    CMP     R2, #0
+    SUB     R5, R5, #1          ; only check 0x100 times, 0x100 is arbitrarily chosen right now
+    CMP     R5, #0
     BEQ     FINISH              ; TODO: add in fail case here!
     
-    LDR     R5, [R4, #0x14]     ; load pin states
-    AND     R5, R5, R3          ; get only p10
+    LDR     R5, [R6, #0x14]     ; load pin states
+    AND     R5, R5, R8          ; get only p10
     CMP     R5, #0
     BEQ     WAIT_FOR_HIGH
     
     ; wait for 2us to get the bit we want
     BL      WAIT_TWO_US_MINUS_OVERHEAD
-    
-    LDR     R5, [R4, #0x14]     ; load pin states
-    AND     R5, R5, R3          ; get only p10
+
+FIRST_READ
+    LDR     R5, [R6, #0x14]     ; load pin states
+    AND     R5, R5, R8          ; get only p10
     CMP     R5, #0
     BEQ     STORE_ZERO
     LDR     R5, =0x01
-    STR     R5, [R0, R7]
+    STR     R5, [R2, R7]
     B       END_STORE_ZERO
 STORE_ZERO
     LDR     R5, =0x00
-    STR     R5, [R0, R7]
+    STR     R5, [R2, R7]
 END_STORE_ZERO
     ADD     R7, R7, #0x04       ; increment address stored
     
     B READ_LOOP
 
+
     
 FINISH   
-    POP     {R4-R7, LR}
+    POP     {R4-R9, LR}
     BX      LR
     
 WAIT_ONE_US_MINUS_OVERHEAD

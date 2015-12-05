@@ -126,7 +126,7 @@ typedef union{
 
 class Gamecube{
 public:
-    Gamecube(void);
+    //Gamecube(void);
     Gamecube(PinName _data_line);
 
     bool begin(const uint8_t pin, Gamecube_Status_t &status);
@@ -141,7 +141,7 @@ public:
     void gc_write_read(uint32_t* wbuff, uint8_t wbuff_len, uint32_t *rbuff, uint8_t rbuff_len);
 
 private:
-    DigitalInOut data_line;
+    DigitalOut data_line;
 };
 
 //
