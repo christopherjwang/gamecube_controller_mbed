@@ -1,7 +1,9 @@
     AREA asm_func, CODE, READONLY
     EXPORT gc_asm_write_read
 gc_asm_write_read
-    PUSH    {R4-R9, LR}
+    PUSH    {R4-R11, LR}
+    LDR     R10, =0x2009C020 ; 0x2009C020 = GPIO port 1 base address TEMPORARY
+    MOV.W   R11, #0x40000000   ; 0x040000 = 1<<18 all "0"s with a "1" in bit 18 TEMPORARY
     SUB     R7, R7, R7
     
 WRITE_LOOP
@@ -49,6 +51,8 @@ FINISH_WRITE
     ;end of send one high bit to terminate
 
 ; begin read
+    STR     R11, [R10,#0x18]
+    STR     R11, [R10,#0x1C]
     
     SUB     R7, R7, R7          ; offset to write into the array given
     SUB     R3, R3, #1
@@ -75,6 +79,8 @@ WAIT_FOR_HIGH
 
 FIRST_READ
     LDR     R5, [R6, #0x14]     ; load pin states
+    STR     R11, [R10,#0x18]
+    STR     R11, [R10,#0x1C]
     AND     R5, R5, R8          ; get only p10
     CMP     R5, #0
     BEQ     STORE_ZERO
@@ -92,7 +98,7 @@ END_STORE_ZERO
 
     
 FINISH   
-    POP     {R4-R9, LR}
+    POP     {R4-R11, LR}
     BX      LR
     
 WAIT_ONE_US_MINUS_OVERHEAD
