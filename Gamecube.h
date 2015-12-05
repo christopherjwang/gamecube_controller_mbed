@@ -138,6 +138,7 @@ public:
     void gc_send(uint32_t* buff, uint8_t len);
     
     void gc_read(uint8_t len);
+    void gc_write_read(uint32_t* wbuff, uint8_t wbuff_len, uint32_t *rbuff, uint8_t rbuff_len);
 
 private:
     DigitalInOut data_line;
