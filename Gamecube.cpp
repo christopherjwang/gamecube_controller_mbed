@@ -86,6 +86,8 @@ void Gamecube::update(void) {
     JOYSTICK_Y = 0;
     C_STICK_X = 0;
     C_STICK_Y = 0;
+    LEFT_TRIGGER = 0;
+    RIGHT_TRIGGER = 0;
     
     for (int i=0; i < 8; i++) {
         JOYSTICK_X <<= 1;
@@ -98,6 +100,10 @@ void Gamecube::update(void) {
         C_STICK_Y <<= 1;
         C_STICK_Y |= data[i+40];
         
+        LEFT_TRIGGER <<= 1;
+        LEFT_TRIGGER |= data[i+48];
+        RIGHT_TRIGGER <<= 1;
+        RIGHT_TRIGGER |= data[i+56];
     }
     
 #ifdef DEBUG
