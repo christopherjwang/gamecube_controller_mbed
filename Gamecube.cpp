@@ -1,18 +1,11 @@
 #include "Gamecube.h"
+extern "C" void gc_asm_write_read(uint32_t *buff, uint8_t len, uint32_t *read_buff, uint8_t read_buff_len);
 
-//================================================================================
-// Gamecube
-//================================================================================
-
-extern "C" int my_asm(uint32_t *buff, uint8_t len);
-extern "C" int gc_asm_read(uint32_t *buff, uint8_t len, uint32_t *read_buff, uint8_t read_buff_len);
-extern "C" int gc_asm_write_read(uint32_t *buff, uint8_t len, uint32_t *read_buff, uint8_t read_buff_len);
-
-
-Serial pc(USBTX, USBRX); // tx, rx
+#ifdef DEBUG
+    Serial pc(USBTX, USBRX); // tx, rx
+#endif
 DigitalIn my_in(p10);
 DigitalOut p(p19);
-
 
 void reverse_array(uint32_t *arr, uint8_t count) {
     int temp, i;
@@ -23,41 +16,55 @@ void reverse_array(uint32_t *arr, uint8_t count) {
     }
 }
 
-
+//TODO: translate pin name to assembly layer, it is currently hardcoded at p9 and p10!!!
 Gamecube::Gamecube(PinName _data_line)
     :data_line(_data_line)
 {
     
 }
 
-
-void Gamecube::gc_asm(uint32_t* buff, uint8_t len) {
-    reverse_array(buff, len);
-    my_asm(buff, len);
-}
-
-void Gamecube::gc_read(uint8_t len) {
-    uint32_t data[len*8];
-    for (int i=0; i < len*8; i++) data[i]=0;
-    gc_asm_read(NULL, 0, data, len*8);
-    for (int i=0; i < len*8; i++) {
-        pc.printf("%d", data[i]);    
+int Gamecube::get_device_id() {
+    uint32_t start_sequence[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    int num_bits = 2 * 8;
+    uint32_t data[num_bits];
+    int ret_val;
+    
+    gc_write_read(start_sequence, 8, data, num_bits);
+    
+    for (int i=0; i < num_bits; i++) {
+        ret_val <<= 1;
+        ret_val |= data[i];
+    }
+    
+#ifdef DEBUG
+    for (int i=0; i < num_bits; i++) {
+        pc.printf("%d", data[i]!=0);
+        if (i>0 && (i+1)%8 == 0) {
+            pc.printf(" ");    
+        }
     }
     pc.printf("\n\r");
+#endif
+    
+    return ret_val;
 }
 
+void Gamecube::rumble(bool r) {
+    _rumble = r;
+    uint32_t status_sequence[] = {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, _rumble};
+    
+    // passing in a variable for data because the assembly can't waste the time between writing and reading at the current moment
+    //TODO: implement assembly such that an empty data array doesn't have to be passed in
+    uint32_t data[1];
+    gc_write_read(status_sequence, 24, data, 0);
+}
 
 void Gamecube::update(void) {
     int num_bits = 8 * 8;
     uint32_t data[num_bits];
-    for (int i=0; i < num_bits; i++) data[i]=0;
-    //g.gc_write_read(start_sequence, 8, data, num_bits);
-
-    //g.gc_asm(start_sequence, 8);
-    uint32_t status_sequence[] = {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0};
-    __disable_irq();
+    uint32_t status_sequence[] = {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, _rumble};
+    
     gc_write_read(status_sequence, 24, data, num_bits);
-    __enable_irq();
     
     // data[0] data[1] data[2] are not used
     START   = data[3] == 1;
@@ -79,6 +86,7 @@ void Gamecube::update(void) {
     JOYSTICK_Y = 0;
     C_STICK_X = 0;
     C_STICK_Y = 0;
+    
     for (int i=0; i < 8; i++) {
         JOYSTICK_X <<= 1;
         JOYSTICK_X |= data[i+16];
@@ -92,6 +100,7 @@ void Gamecube::update(void) {
         
     }
     
+#ifdef DEBUG
     for (int i=0; i < num_bits; i++) {
         pc.printf("%d", data[i]!=0);
         if (i>0 && (i+1)%8 == 0) {
@@ -99,30 +108,11 @@ void Gamecube::update(void) {
         }
     }
     pc.printf("\n\r");
+#endif
 }
 
 void Gamecube::gc_write_read(uint32_t* wbuff, uint8_t wbuff_len, uint32_t *rbuff, uint8_t rbuff_len) {
-    gc_asm_write_read(wbuff, wbuff_len, rbuff, rbuff_len);
-}
-
-void Gamecube::gc_send(uint32_t* buff, uint8_t len) {
     __disable_irq();
-    uint8_t i;
-
-    for (i=0; i < len; i++) {
-        if (buff[i]) {
-            data_line.write(0);
-            wait_us(.6);
-            data_line.write(1);
-            wait_us(2.6);
-            data_line.write(1);
-        } else {
-            data_line.write(0);
-            wait_us(2.6);
-            data_line.write(1);
-            wait_us(.6);
-            data_line.write(1);
-        }
-    }
+    gc_asm_write_read(wbuff, wbuff_len, rbuff, rbuff_len);
     __enable_irq();
 }

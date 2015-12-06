@@ -1,6 +1,6 @@
     AREA asm_func, CODE, READONLY
-    EXPORT gc_asm_write_read
-gc_asm_write_read
+    EXPORT gc_asm_write
+gc_asm_write
     PUSH    {R4-R11, LR}
     LDR     R10, =0x2009C020 ; 0x2009C020 = GPIO port 1 base address TEMPORARY
     MOV.W   R11, #0x40000000   ; 0x040000 = 1<<18 all "0"s with a "1" in bit 18 TEMPORARY
@@ -13,7 +13,7 @@ WRITE_LOOP
 ; Move bit mask in register R4 for bit 18 only
     MOV.W   R4, #0x00000001   ; 0x040000 = 1<<18 all "0"s with a "1" in bit 18
 
-    MOV.W   R8, 0x00000002     ; Mask for p10 used for read
+    MOV.W   R8, #0x00000001     ; Mask for p10 used for read
 
     LDR     R5, [R0, R7]
     
@@ -49,53 +49,6 @@ FINISH_WRITE
     STR     R4, [R6,#0x18]  ; set high
     BL       WAIT_ONE_US_MINUS_OVERHEAD
     ;end of send one high bit to terminate
-
-; begin read
-    STR     R11, [R10,#0x18]
-    STR     R11, [R10,#0x1C]
-    
-    SUB     R7, R7, R7          ; offset to write into the array given
-    SUB     R3, R3, #1
-    B       FIRST_READ
-    
-READ_LOOP
-    SUB     R3, R3, #1  ;R3 is the number of bits to read
-    CMP     R3, #0
-    BLT     FINISH
-    
-    LDR     R5, =0x999999
-WAIT_FOR_HIGH
-    SUB     R5, R5, #1          ; only check 0x100 times, 0x100 is arbitrarily chosen right now
-    CMP     R5, #0
-    BEQ     FINISH              ; TODO: add in fail case here!
-    
-    LDR     R5, [R6, #0x14]     ; load pin states
-    AND     R5, R5, R8          ; get only p10
-    CMP     R5, #0
-    BEQ     WAIT_FOR_HIGH
-    
-    ; wait for 2us to get the bit we want
-    BL      WAIT_TWO_US_MINUS_OVERHEAD
-
-FIRST_READ
-    LDR     R5, [R6, #0x14]     ; load pin states
-    STR     R11, [R10,#0x18]
-    STR     R11, [R10,#0x1C]
-    AND     R5, R5, R8          ; get only p10
-    CMP     R5, #0
-    BEQ     STORE_ZERO
-    LDR     R5, =0x01
-    STR     R5, [R2, R7]
-    BL      WAIT_ONE_US_MINUS_OVERHEAD    
-    B       END_STORE_ZERO
-STORE_ZERO
-    LDR     R5, =0x00
-    STR     R5, [R2, R7]
-END_STORE_ZERO
-    ADD     R7, R7, #0x04       ; increment address stored
-    B READ_LOOP
-
-
     
 FINISH   
     POP     {R4-R11, LR}
@@ -127,20 +80,3 @@ _WAIT_ONE_US
     CMP     R5, #0
     BNE     _WAIT_ONE_US
     BX      LR
-    
-WAIT_TWO_US_MINUS_OVERHEAD
-    LDR     R5, =0x17
-_WAIT_TWO_US_MINUS_OVERHEAD
-    SUB     R5, R5, #1
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    CMP     R5, #0
-    BNE     _WAIT_TWO_US_MINUS_OVERHEAD
-    BX      LR
-    
-    
-    END
