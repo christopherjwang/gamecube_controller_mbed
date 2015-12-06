@@ -139,6 +139,26 @@ public:
     
     void gc_read(uint8_t len);
     void gc_write_read(uint32_t* wbuff, uint8_t wbuff_len, uint32_t *rbuff, uint8_t rbuff_len);
+    
+    void Gamecube::update(void);
+    
+    bool A;
+    bool B;
+    bool X;
+    bool Y;
+    bool START;
+    bool L;
+    bool R;
+    bool Z;
+    bool D_UP;
+    bool D_DOWN;
+    bool D_LEFT;
+    bool D_RIGHT;
+    
+    int JOYSTICK_X;
+    int JOYSTICK_Y;
+    int C_STICK_X;
+    int C_STICK_Y;
 
 private:
     DigitalOut data_line;
